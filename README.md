@@ -37,7 +37,7 @@ Dashboards/
 │ ├── push_age_data.csv # Возрастные данные (опционально)
 │ ├── sms_age_data.csv
 │ ├── combined_age_data.csv
-│ └── control_age_data.csv
+│ └── control_age_data.csv 
 └── outputs/
 ├── kpi_dashboard_dual_mode.html
 └── ab_test_hybrid_dashboard.html
