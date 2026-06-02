@@ -14,10 +14,6 @@ from datetime import datetime
 import hashlib
 
 warnings.filterwarnings('ignore')
-import random  # добавить в импорты
-
-# ---------- 0. РЕЖИМ РАБОТЫ ----------
-DEMO_MODE = True  # Перед публикацией на GitHub — True, для реальных данных — False
 
 # ---------- 1. ОПИСАНИЕ ЭКСПЕРИМЕНТА ----------
 EXPERIMENT_INFO = {
@@ -39,91 +35,82 @@ EXPERIMENT_INFO = {
 }
 
 # ---------- 2. ДАННЫЕ (универсальный формат) ----------
+DATA = {
+    'push': {
+        'name': 'ПУШ',
+        'users': 0,
+        'active_clients': 0,
+        'sales': 0,
+        'avg_check': 0,
+        'purchases': 0,
+        'checks_per_customer': 0,
+        'items_per_check': 0,
+        'bonus_earned': 0,
+        'bonus_spent': 0,
+        'bonus_balance': 0,
+        'total_discounts': 0,
+        'bonus_given_promo': 0,
+        'comm_cost_per_user': 0,
+        'has_promotion': True,
+        'promotion_type': 'push_notification'
+    },
+    'sms': {
+        'name': 'СМС',
+        'users': 0,
+        'active_clients': 0,
+        'sales': 0,
+        'avg_check': 0,
+        'purchases': 0,
+        'checks_per_customer': 0,
+        'items_per_check': 0,
+        'bonus_earned': 0,
+        'bonus_spent': 0,
+        'bonus_balance': 0,
+        'total_discounts': 0,
+        'bonus_given_promo': 0,
+        'comm_cost_per_user': 0,
+        'has_promotion': True,
+        'promotion_type': 'sms'
+    },
+    'combined': {
+        'name': 'ОБЪЕДИНЁННАЯ',
+        'users': 0,
+        'active_clients': 0,
+        'sales': 0,
+        'avg_check': 0,
+        'purchases': 0,
+        'checks_per_customer': 0,
+        'items_per_check': 0,
+        'bonus_earned': 0,
+        'bonus_spent': 0,
+        'bonus_balance': 0,
+        'total_discounts': 0,
+        'bonus_given_promo': 0,
+        'comm_cost_per_user': 0,
+        'has_promotion': True,
+        'promotion_type': 'push+sms'
+    },
+    'control': {
+        'name': 'КОНТРОЛЬ',
+        'users': 0,
+        'active_clients': 0,
+        'sales': 0,
+        'avg_check': 0,
+        'purchases': 0,
+        'checks_per_customer': 0,
+        'items_per_check': 0,
+        'bonus_earned': 0,
+        'bonus_spent': 0,
+        'bonus_balance': 0,
+        'total_discounts': 0,
+        'bonus_given_promo': 0,
+        'comm_cost_per_user': 0,
+        'has_promotion': False,
+        'promotion_type': 'none'
+    }
+}
 
-
-if DEMO_MODE:
-    print("\n🎮 ДЕМО-РЕЖИМ: используются синтетические данные\n")
-    # Здесь вставьте ВЕСЬ словарь DATA с реальными числами (ваш первый вариант)
-    DATA = { ... }  # с реальными цифрами
-    MARGIN = 0.295
-else:
-    # Режим с нулями — для подстановки реальных данных
-    DATA = {
-        'push': {
-            'name': 'ПУШ',
-            'users': 0,
-            'active_clients': 0,
-            'sales': 0,
-            'avg_check': 0,
-            'purchases': 0,
-            'checks_per_customer': 0,
-            'items_per_check': 0,
-            'bonus_earned': 0,
-            'bonus_spent': 0,
-            'bonus_balance': 0,
-            'total_discounts': 0,
-            'bonus_given_promo': 0,
-            'comm_cost_per_user': 0,
-            'has_promotion': True,
-            'promotion_type': 'push_notification'
-        },
-        'sms': {
-            'name': 'СМС',
-            'users': 0,
-            'active_clients': 0,
-            'sales': 0,
-            'avg_check': 0,
-            'purchases': 0,
-            'checks_per_customer': 0,
-            'items_per_check': 0,
-            'bonus_earned': 0,
-            'bonus_spent': 0,
-            'bonus_balance': 0,
-            'total_discounts': 0,
-            'bonus_given_promo': 0,
-            'comm_cost_per_user': 0,
-            'has_promotion': True,
-            'promotion_type': 'sms'
-        },
-        'combined': {
-            'name': 'ОБЪЕДИНЁННАЯ',
-            'users': 0,
-            'active_clients': 0,
-            'sales': 0,
-            'avg_check': 0,
-            'purchases': 0,
-            'checks_per_customer': 0,
-            'items_per_check': 0,
-            'bonus_earned': 0,
-            'bonus_spent': 0,
-            'bonus_balance': 0,
-            'total_discounts': 0,
-            'bonus_given_promo': 0,
-            'comm_cost_per_user': 0,
-            'has_promotion': True,
-            'promotion_type': 'push+sms'
-        },
-        'control': {
-            'name': 'КОНТРОЛЬ',
-            'users': 0,
-            'active_clients': 0,
-            'sales': 0,
-            'avg_check': 0,
-            'purchases': 0,
-            'checks_per_customer': 0,
-            'items_per_check': 0,
-            'bonus_earned': 0,
-            'bonus_spent': 0,
-            'bonus_balance': 0,
-            'total_discounts': 0,
-            'bonus_given_promo': 0,
-            'comm_cost_per_user': 0,
-            'has_promotion': False,
-            'promotion_type': 'none'
-        }
-    }  # ваш словарь с нулями
-    MARGIN = float(input("Введите маржинальность (например, 0.295): "))
-
+MARGIN = str(input("enter margin"))
 
 
 # ---------- 3. ЗАГРУЗКА ДАННЫХ ПО ВОЗРАСТУ ИЗ ФАЙЛОВ ----------
