@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A/B/C Тест бонусной программы - Полный статистический анализ</title>
+    <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.11/dist/interact.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .header {
+            background: white; padding: 25px; border-radius: 20px; margin-bottom: 25px;
+            text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .header h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-size: 2em;
+        }
+        .experiment-info {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: left;
+            border-left: 4px solid #667eea;
+        }
+        .experiment-info p {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        .stats-cards {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px; margin-bottom: 25px;
+        }
+        .stat-card {
+            background: white; border-radius: 15px; padding: 20px;
+            text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card h3 { font-size: 14px; color: #888; margin-bottom: 10px; text-transform: uppercase; }
+        .stat-card .value { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+        .promotion-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+        .uplift-positive { background: #d4edda; color: #155724; padding: 5px 10px; border-radius: 8px; }
+        .uplift-negative { background: #f8d7da; color: #721c24; padding: 5px 10px; border-radius: 8px; }
+        .controls-bar {
+            background: white; border-radius: 15px; padding: 15px 20px;
+            margin-bottom: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            display: flex; gap: 15px; flex-wrap: wrap; align-items: center;
+            justify-content: space-between;
+        }
+        .btn {
+            padding: 8px 16px; background: #667eea; color: white;
+            border: none; border-radius: 8px; cursor: pointer;
+            font-size: 14px; transition: all 0.2s;
+        }
+        .btn:hover { background: #764ba2; transform: translateY(-1px); }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        .select-metric {
+            padding: 8px 12px; border-radius: 8px; border: 2px solid #e0e0e0;
+            font-size: 14px; min-width: 320px;
+        }
+        .charts-grid {
+            position: relative;
+            min-height: 800px;
+            margin-bottom: 20px;
+        }
+        .chart-card {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            transition: box-shadow 0.2s;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chart-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.25); z-index: 100; }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+            cursor: grab;
+            flex-shrink: 0;
+        }
+        .chart-header:active { cursor: grabbing; }
+        .chart-header h3 { font-size: 13px; color: #333; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .header-buttons { display: flex; gap: 5px; margin-left: 8px; }
+        .chart-type-btn {
+            background: #667eea; color: white; border: none; border-radius: 4px;
+            width: 28px; height: 28px; cursor: pointer; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .chart-type-btn:hover { background: #764ba2; }
+        .remove-btn { background: #dc3545; color: white; border: none; border-radius: 4px; width: 28px; height: 28px; cursor: pointer; font-size: 16px; }
+        .remove-btn:hover { background: #c82333; }
+        .chart-container { width: 100%; flex: 1; min-height: 0; position: relative; }
+        .resize-handle {
+            position: absolute; bottom: 5px; right: 5px;
+            width: 16px; height: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px; cursor: nw-resize; z-index: 10;
+        }
+        .resize-handle:hover { transform: scale(1.1); }
+        .stats-block { background: white; border-radius: 15px; padding: 20px; margin-top: 20px; border-left: 4px solid #667eea; }
+        .stats-block h4 { color: #667eea; margin-bottom: 15px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 15px; }
+        .stat-item { background: #f8f9fa; padding: 12px; border-radius: 10px; }
+        .stat-item strong { color: #667eea; }
+        .significant-yes { color: #28a745; font-weight: bold; }
+        .significant-no { color: #dc3545; font-weight: bold; }
+        .note { background: #e7f3ff; padding: 10px 15px; border-radius: 10px; font-size: 12px; color: #0066cc; margin-top: 15px; }
+        .insights { background: white; border-radius: 15px; padding: 25px; margin-top: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .insights h3 { color: #667eea; margin-bottom: 15px; }
+        .insights li { padding: 10px 0; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
+        .age-stats-card {
+            background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .age-stats-card h3 { color: #667eea; margin-bottom: 15px; }
+        .age-table {
+            width: 100%; border-collapse: collapse; margin-top: 10px;
+        }
+        .age-table th, .age-table td {
+            padding: 10px; text-align: center; border-bottom: 1px solid #eee;
+        }
+        .age-table th { background: #667eea; color: white; }
+        @media (max-width: 768px) {
+            .chart-card { position: relative !important; margin-bottom: 15px; width: 100% !important; }
+            .charts-grid { position: static; display: flex; flex-direction: column; }
+            .resize-handle { display: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🚀 A/B/C/D Тест бонусной программы "100+50"</h1>
+        <p>Гибридный статистический анализ: классические тесты + байесовские доверительные интервалы</p>
+    </div>
+
+    <div class="experiment-info">
+        <h3>📋 Информация об эксперименте</h3>
+        <p>
+    <strong>🎯 Условия акции:</strong><br>
+    • Скидка 100 рублей + 50 дополнительных бонусов<br>
+    • Порог срабатывания: покупка от 800 рублей<br>
+    • Применялась к группам: ПУШ, СМС, ОБЪЕДИНЁННАЯ (СМС+ПУШ)<br>
+    • Количество применений: неограниченно<br>
+    • Контрольная группа: без акции<br><br>
+
+    <strong>📊 Методология анализа:</strong><br>
+    • <strong>Классическая статистика:</strong> ANOVA, χ²-тест, t-критерий, доверительные интервалы (95%)<br>
+    • <strong>Байесовский подход:</strong> для оценки вероятности преимущества (бутстрап)<br>
+    • <strong>ROI/ROMI:</strong> с учетом стоимости каналов (СМС - 8₽, комбинированный - 5₽)<br>
+    • <strong>Бонусная эффективность:</strong> выручка на 1 рубль потраченных бонусов<br>
+    </p>
+    </div>
+
+    <div class="stats-cards" id="stats-cards"></div>
+
+    <div class="age-stats-card" id="age-stats-card"></div>
+
+    <div class="controls-bar">
+        <div>
+            <label style="margin-right: 8px;">📊 Выберите метрику:</label>
+            <select id="metric-select" class="select-metric">
+                <optgroup label="📈 ОТНОСИТЕЛЬНЫЕ МЕТРИКИ">
+<option value="primary_conversion">Первичная конверсия (%)</option>
+<option value="retention_rate">Удержание (повторных покупок на активного)</option>
+<option value="arpu">ARPU (выручка на пользователя, ₽)</option>
+<option value="arppu">ARPPU (выручка на активного, ₽)</option>
+<option value="avg_check">Средний чек (₽)</option>
+<option value="checks_per_customer">Чеков на клиента (шт)</option>
+</optgroup>
+<optgroup label="💰 АБСОЛЮТНЫЕ МЕТРИКИ">
+<option value="revenue">Выручка (факт, ₽)</option>
+<option value="net_profit">Чистая прибыль (факт, ₽)</option>
+<option value="active">Активные клиенты (факт, чел)</option>
+<option value="purchases">Количество покупок (факт, шт)</option>
+</optgroup>
+<optgroup label="📊 ПРИВЕДЁННЫЕ МЕТРИКИ">
+<option value="revenue_normalized">Выручка (приведённая к контролю, ₽)</option>
+<option value="net_profit_normalized">Чистая прибыль (приведённая к контролю, ₽)</option>
+<option value="active_normalized">Активные клиенты (приведённые к контролю, чел)</option>
+<option value="purchases_normalized">Количество покупок (приведённые к контролю, шт)</option>
+</optgroup>
+<optgroup label="🎯 ЭФФЕКТИВНОСТЬ ИНВЕСТИЦИЙ">
+<option value="roi">ROI (возврат на инвестиции, %)</option>
+<option value="romi">ROMI (Return on Marketing Investment, ₽)</option>
+<option value="bonus_efficiency">Бонусная эффективность (выручка на 1₽ бонусов)</option>
+</optgroup>
+<optgroup label="👥 АНАЛИЗ АУДИТОРИИ">
+<option value="age_analysis">👥 Анализ возраста клиентов</option>
+</optgroup>
+            </select>
+        </div>
+        <div>
+            <button class="btn btn-success" onclick="addChart()">➕ Добавить график</button>
+            <button class="btn btn-danger" onclick="resetAllCharts()">🗑 Удалить все</button>
+        </div>
+    </div>
+
+    <div id="charts-grid" class="charts-grid"></div>
+
+    <div class="stats-block">
+        <h4>📊 Статистический анализ (Гибридный подход)</h4>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="note">
+            📌 <strong>Методология:</strong><br>
+            • <strong>ANOVA + пост-хок (Tukey HSD):</strong> для сравнения конверсии между всеми группами<br>
+            • <strong>χ²-тест + Cramér's V:</strong> для анализа удержания<br>
+            • <strong>t-критерий + Cohen's d:</strong> для среднего чека с 95% доверительными интервалами<br>
+            • <strong>Байесовский бутстрап:</strong> для оценки вероятности преимущества<br>
+            • <strong>Уровень значимости:</strong> α = 0.05 (95% доверительная вероятность)
+        </div>
+    </div>
+
+    <div class="insights" id="insights"></div>
+</div>
+
+<script>
+    const allMetrics = {"push": {"id": "push", "name": "ПУШ", "n": 8942, "active": 2156, "primary_conversion": 0.2411093715052561, "purchases": 4310, "repeat_purchases": 2154, "retention_rate": 0.9990723562152134, "avg_check": 672, "revenue": 2897450, "arpu": 324.0270632968016, "arppu": 1343.900742115028, "bonus_spent": 156780, "bonus_earned": 185420, "bonus_given_promo": 0, "bonus_balance": 28640, "bonus_utilization": 0, "total_discounts": 467200, "gross_profit": 854747.75, "net_profit": 854747.75, "revenue_per_bonus_spent": 18.48099247352979, "checks_per_customer": 2.0, "items_per_check": 4.9, "repeat_customers": 1078.0, "comm_cost": 0, "roi": 0, "romi": 0, "bonus_efficiency": 18.48099247352979, "has_promotion": true, "promotion_type": "push_notification"}, "sms": {"id": "sms", "name": "СМС", "n": 6750, "active": 1421, "primary_conversion": 0.21051851851851852, "purchases": 2390, "repeat_purchases": 969, "retention_rate": 0.6819141449683321, "avg_check": 658, "revenue": 1572300, "arpu": 232.93333333333334, "arppu": 1106.4743138634765, "bonus_spent": 45230, "bonus_earned": 98750, "bonus_given_promo": 0, "bonus_balance": 53520, "bonus_utilization": 0, "total_discounts": 234500, "gross_profit": 463828.5, "net_profit": 409828.5, "revenue_per_bonus_spent": 34.76232588989609, "checks_per_customer": 1.68, "items_per_check": 5.1, "repeat_customers": 575.1666666666666, "comm_cost": 54000, "roi": 758.9416666666667, "romi": 7.589416666666667, "bonus_efficiency": 34.76232588989609, "has_promotion": true, "promotion_type": "sms"}, "combined": {"id": "combined", "name": "ОБЪЕДИНЁННАЯ", "n": 11280, "active": 3098, "primary_conversion": 0.274645390070922, "purchases": 5428, "repeat_purchases": 2330, "retention_rate": 0.7520981278244029, "avg_check": 714, "revenue": 3876540, "arpu": 343.6648936170213, "arppu": 1251.3040671400904, "bonus_spent": 198430, "bonus_earned": 223560, "bonus_given_promo": 0, "bonus_balance": 25130, "bonus_utilization": 0, "total_discounts": 589300, "gross_profit": 1143579.3, "net_profit": 1087179.3, "revenue_per_bonus_spent": 19.53605805573754, "checks_per_customer": 1.75, "items_per_check": 5.3, "repeat_customers": 1327.7142857142858, "comm_cost": 56400, "roi": 1927.6228723404256, "romi": 19.276228723404255, "bonus_efficiency": 19.53605805573754, "has_promotion": true, "promotion_type": "push+sms"}, "control": {"id": "control", "name": "КОНТРОЛЬ", "n": 15670, "active": 3120, "primary_conversion": 0.19910657306955967, "purchases": 5750, "repeat_purchases": 2630, "retention_rate": 0.842948717948718, "avg_check": 693, "revenue": 3985120, "arpu": 254.3152520740268, "arppu": 1277.2820512820513, "bonus_spent": 115670, "bonus_earned": 134280, "bonus_given_promo": 0, "bonus_balance": 18610, "bonus_utilization": 0, "total_discounts": 345600, "gross_profit": 1175610.4, "net_profit": 1175610.4, "revenue_per_bonus_spent": 34.452494164433304, "checks_per_customer": 1.84, "items_per_check": 5.2, "repeat_customers": 1424.3478260869565, "comm_cost": 0, "roi": 0, "romi": 0, "bonus_efficiency": 34.452494164433304, "has_promotion": false, "promotion_type": "none"}};
+    const normalizedMetrics = {"push": {"scale_factor": 1.7524043838067547, "revenue": 5077504.081860881, "active": 3778.183851487363, "purchases": 7552.862894207113, "bonus_spent": 274741.959293223, "bonus_earned": 324930.82084544847, "gross_profit": 1497863.70414896, "net_profit": 1497863.70414896, "total_discounts": 818723.3281145158, "repeat_customers": 1889.0919257436815, "comm_cost": 0.0, "roi": 0, "romi": 0, "bonus_efficiency": 18.48099247352979}, "sms": {"scale_factor": 2.3214814814814817, "revenue": 3650065.3333333335, "active": 3298.8251851851855, "purchases": 5548.340740740741, "bonus_spent": 105000.60740740741, "bonus_earned": 229246.29629629632, "gross_profit": 1076769.2733333334, "net_profit": 951409.2733333334, "total_discounts": 544387.4074074074, "repeat_customers": 1335.2387654320987, "comm_cost": 125360.00000000001, "roi": 758.9416666666667, "romi": 7.589416666666667, "bonus_efficiency": 34.76232588989609}, "combined": {"scale_factor": 1.3891843971631206, "revenue": 5385228.882978723, "active": 4303.693262411348, "purchases": 7540.492907801418, "bonus_spent": 275655.859929078, "bonus_earned": 310566.06382978725, "gross_profit": 1588642.5204787236, "net_profit": 1510292.5204787236, "total_discounts": 818646.3652482269, "repeat_customers": 1844.4399696048633, "comm_cost": 78350.0, "roi": 1927.6228723404256, "romi": 19.276228723404255, "bonus_efficiency": 19.53605805573754}, "control": {"scale_factor": 1, "revenue": 3985120, "active": 3120, "purchases": 5750, "bonus_spent": 115670, "bonus_earned": 134280, "gross_profit": 1175610.4, "net_profit": 1175610.4, "total_discounts": 345600, "repeat_customers": 1424.3478260869565, "comm_cost": 0, "roi": 0, "romi": 0, "bonus_efficiency": 34.452494164433304}};
+    const uplifts = {"push": {"primary_conv_pp": 4.200279843569643, "primary_conv_rel": 21.09563626562061, "retention_abs": 0.15612363826649545, "retention_rel": 18.521131231614675, "arpu_abs": 69.7118112227748, "arpu_rel": 27.41157309844826, "arppu_abs": 66.61869083297665, "arppu_rel": 5.215660140695566, "revenue_normalized_abs": -2180054.0818608813, "revenue_normalized_rel": -42.935545628589665, "net_profit_abs": -320862.6499999999, "net_profit_normalized_abs": -643115.9541489601, "net_profit_normalized_rel": -42.935545628589665, "bonus_utilization_abs": 0, "active_abs": -964, "active_normalized_abs": -1622.183851487363, "purchases_abs": -1440, "purchases_normalized_abs": -3242.8628942071127, "checks_per_customer_abs": 0.15999999999999992, "roi_abs": 0, "bonus_efficiency_abs": -15.971501690903516}, "sms": {"primary_conv_pp": 1.141194544895885, "primary_conv_rel": 5.731576448243114, "retention_abs": -0.16103457298038582, "retention_rel": -19.10372120527771, "arpu_abs": -21.381918740693465, "arpu_rel": -8.407643098994921, "arppu_abs": -170.8077374185748, "arppu_rel": -13.37275014920387, "revenue_normalized_abs": -2077765.3333333335, "revenue_normalized_rel": -56.924058710912576, "net_profit_abs": -765781.8999999999, "net_profit_normalized_abs": -541580.7733333334, "net_profit_normalized_rel": -56.924058710912576, "bonus_utilization_abs": 0, "active_abs": -1699, "active_normalized_abs": -1877.8251851851855, "purchases_abs": -3360, "purchases_normalized_abs": -3158.3407407407412, "checks_per_customer_abs": -0.16000000000000014, "roi_abs": 758.9416666666667, "bonus_efficiency_abs": 0.3098317254627858}, "combined": {"primary_conv_pp": 7.55388170013623, "primary_conv_rel": 37.938886615748316, "retention_abs": -0.09085059012431507, "retention_rel": -10.77771259269441, "arpu_abs": 89.34964154299448, "arpu_rel": 35.13341839088218, "arppu_abs": -25.97798414196086, "arppu_rel": -2.033848680163153, "revenue_normalized_abs": -1508688.8829787234, "revenue_normalized_rel": -28.015315890236113, "net_profit_abs": -88431.09999999986, "net_profit_normalized_abs": -423113.2204787235, "net_profit_normalized_rel": -28.015315890236124, "bonus_utilization_abs": 0, "active_abs": -22, "active_normalized_abs": -1205.6932624113479, "purchases_abs": -322, "purchases_normalized_abs": -2112.4929078014184, "checks_per_customer_abs": -0.09000000000000008, "roi_abs": 1927.6228723404256, "bonus_efficiency_abs": -14.916436108695763}};
+    const stats = {"control_id": "control", "control_name": "КОНТРОЛЬ", "groups_count": 4, "experiment_info": {"name": "A/B/C/D Тест бонусной программы \"100+50\"", "description": "\n    <strong>🎯 Условия акции:</strong><br>\n    • Скидка 100 рублей + 50 дополнительных бонусов<br>\n    • Порог срабатывания: покупка от 800 рублей<br>\n    • Применялась к группам: ПУШ, СМС, ОБЪЕДИНЁННАЯ (СМС+ПУШ)<br>\n    • Количество применений: неограниченно<br>\n    • Контрольная группа: без акции<br><br>\n\n    <strong>📊 Методология анализа:</strong><br>\n    • <strong>Классическая статистика:</strong> ANOVA, χ²-тест, t-критерий, доверительные интервалы (95%)<br>\n    • <strong>Байесовский подход:</strong> для оценки вероятности преимущества (бутстрап)<br>\n    • <strong>ROI/ROMI:</strong> с учетом стоимости каналов (СМС - 8₽, комбинированный - 5₽)<br>\n    • <strong>Бонусная эффективность:</strong> выручка на 1 рубль потраченных бонусов<br>\n    "}, "anova_results": {"f_statistic": 77.84545081117284, "p_value": 3.2612638235521263e-50, "significant": "True", "posthoc": {"ПУШ vs СМС": {"t_statistic": 4.525163900580048, "p_value": 6.079185622962177e-06, "significant": "True"}, "ПУШ vs ОБЪЕДИНЁННАЯ": {"t_statistic": -5.404561922096471, "p_value": 6.57020275961878e-08, "significant": "True"}, "ПУШ vs КОНТРОЛЬ": {"t_statistic": 7.731735365748826, "p_value": 1.1013849285427574e-14, "significant": "True"}, "СМС vs ОБЪЕДИНЁННАЯ": {"t_statistic": -9.639883412803178, "p_value": 6.128247382796996e-22, "significant": "True"}, "СМС vs КОНТРОЛЬ": {"t_statistic": 1.950446250664551, "p_value": 0.05113539807290821, "significant": "False"}, "ОБЪЕДИНЁННАЯ vs КОНТРОЛЬ": {"t_statistic": 14.57747044989772, "p_value": 5.950656186304649e-48, "significant": "True"}}}, "chi2_results": {"push": {"chi2": 9.541862077495827, "p_value": 0.0020083788637632674, "cramers_v": 0.04252694386849951, "significant": "True"}, "sms": {"chi2": 10.407806402834519, "p_value": 0.0012548371454246948, "cramers_v": 0.047874455953940846, "significant": "True"}, "combined": {"chi2": 4.851740240800339, "p_value": 0.027618254578877798, "cramers_v": 0.027933374993604782, "significant": "True"}}, "ttest_results": {"push": {"t_statistic": -2.735727695967631, "p_value": 0.006235166556658648, "mean_diff": -26.561055893361868, "ci_lower": -45.477945539091266, "ci_upper": -7.644166247632469, "cohens_d": -0.05528490799661819, "significant": "True"}, "sms": {"t_statistic": -3.2857756772233726, "p_value": 0.001021323980746294, "mean_diff": -39.01807723063018, "ci_lower": -61.75387965865987, "ci_upper": -16.282274802600494, "cohens_d": -0.08090434301178621, "significant": "True"}, "combined": {"t_statistic": 1.3165965168891745, "p_value": 0.1880009051693031, "mean_diff": 12.424026541945977, "ci_lower": -6.071282255496772, "ci_upper": 30.919335339388727, "cohens_d": 0.02491738236620911, "significant": "False"}}, "bootstrap_ci": {"push": {"point_estimate": 0.04200279843569643, "ci_lower": 0.031285404186691596, "ci_upper": 0.05282981889813343, "prob_better": 1.0, "significant": "True"}, "sms": {"point_estimate": 0.011411945448958849, "ci_lower": -0.00013900115814603336, "ci_upper": 0.022995015244983333, "prob_better": 0.9731, "significant": "False"}, "combined": {"point_estimate": 0.07553881700136231, "ci_lower": 0.06498949408681717, "ci_upper": 0.08578252363689029, "prob_better": 1.0, "significant": "True"}}};
+    const ageStats = {"push": {"name": "ПУШ", "mean": 39.79217644610903, "median": 39.0, "min": 0.0, "max": 1013.0, "std": 17.521436996979222, "count": 12015}, "sms": {"name": "СМС", "mean": 53.608942879296976, "median": 55.0, "min": 18.0, "max": 125.0, "std": 16.68628119110801, "count": 3869}, "combined": {"name": "ОБЪЕДИНЁННАЯ", "mean": 43.15764291110551, "median": 41.0, "min": 0.0, "max": 1013.0, "std": 18.308891729926025, "count": 15884}, "control": {"name": "КОНТРОЛЬ", "mean": 50.608842162016444, "median": 50.0, "min": 16.0, "max": 1021.0, "std": 18.604454824363714, "count": 14838}};
+    const controlId = stats.control_id;
+    const controlMetrics = allMetrics[controlId];
+
+    const plotlyConfig = {
+        displayModeBar: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ['zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines'],
+        modeBarButtonsToAdd: ['toImage']
+    };
+
+    let charts = [];
+    let nextId = 1;
+    let resizeTimeout = null;
+
+    function getMetricValue(metric) {
+        const result = {};
+        for (const [groupId, metrics] of Object.entries(allMetrics)) {
+            if (metric === 'primary_conversion') {
+                result[groupId] = (metrics[metric] || 0) * 100;
+            } else if (metric === 'revenue_normalized') {
+                result[groupId] = normalizedMetrics[groupId]?.revenue || 0;
+            } else if (metric === 'net_profit_normalized') {
+                result[groupId] = normalizedMetrics[groupId]?.net_profit || 0;
+            } else if (metric === 'active_normalized') {
+                result[groupId] = Math.round(normalizedMetrics[groupId]?.active || 0);
+            } else if (metric === 'purchases_normalized') {
+                result[groupId] = Math.round(normalizedMetrics[groupId]?.purchases || 0);
+            } else if (metric === 'age_analysis') {
+                return 'special_age_chart';
+            } else if (metric === 'roi') {
+                result[groupId] = metrics[metric] || 0;
+            } else if (metric === 'romi') {
+                result[groupId] = metrics[metric] || 0;
+            } else if (metric === 'bonus_efficiency') {
+                result[groupId] = metrics[metric] || 0;
+            } else {
+                result[groupId] = metrics[metric] || 0;
+            }
+        }
+        return result;
+    }
+
+    function getMetricTitle(metric) {
+        const titles = {
+            'primary_conversion': 'Первичная конверсия (%)',
+            'retention_rate': 'Удержание',
+            'arpu': 'ARPU (₽)',
+            'arppu': 'ARPPU (₽)',
+            'avg_check': 'Средний чек (₽)',
+            'checks_per_customer': 'Чеков на клиента (шт)',
+            'revenue': 'Выручка (₽)',
+            'net_profit': 'Чистая прибыль (₽)',
+            'active': 'Активные клиенты (чел)',
+            'purchases': 'Количество покупок (шт)',
+            'revenue_normalized': 'Выручка (приведённая, ₽)',
+            'net_profit_normalized': 'Чистая прибыль (приведённая, ₽)',
+            'active_normalized': 'Активные клиенты (приведённые, чел)',
+            'purchases_normalized': 'Количество покупок (приведённые, шт)',
+            'roi': 'ROI (возврат на инвестиции, %)',
+            'romi': 'ROMI (прибыль на 1₽ затрат, ₽)',
+            'bonus_efficiency': 'Бонусная эффективность (выручка/бонусы)',
+            'age_analysis': '👥 Анализ возраста клиентов'
+        };
+        return titles[metric] || metric;
+    }
+
+    function formatValue(value, metric) {
+        if (metric === 'primary_conversion') return value.toFixed(2) + '%';
+        if (metric === 'retention_rate') return value.toFixed(3) + 'x';
+        if (metric === 'checks_per_customer') return value.toFixed(2) + ' шт';
+        if (metric === 'roi') return value.toFixed(2) + '%';
+        if (metric === 'romi') return value.toFixed(2) + ' ₽';
+        if (metric === 'bonus_efficiency') return value.toFixed(2) + ' ₽';
+        if (metric.includes('active') || metric.includes('purchases')) return Math.round(value).toLocaleString();
+        if (metric.includes('revenue') || metric.includes('profit') || metric === 'arpu' || metric === 'arppu' || metric === 'avg_check') 
+            return Math.round(value).toLocaleString() + ' ₽';
+        return value.toFixed(2);
+    }
+
+    function getColors(groups) {
+        const colorPalette = ['#E74C3C', '#2ECC71', '#3498DB', '#F39C12', '#9B59B6', '#1ABC9C', '#E67E22', '#34495E'];
+        const colors = {};
+        let idx = 0;
+        for (const groupId of groups) {
+            colors[groupId] = colorPalette[idx % colorPalette.length];
+            idx++;
+        }
+        return colors;
+    }
+
+    function createAgeAnalysisFigure(customHeight, customWidth) {
+        const groups = Object.keys(ageStats);
+        if (groups.length === 0) {
+            return { data: [], layout: { title: 'Нет данных о возрасте' } };
+        }
+
+        const means = [];
+        const names = [];
+        const stds = [];
+
+        for (const [groupId, data] of Object.entries(ageStats)) {
+            means.push(data.mean);
+            names.push(data.name);
+            stds.push(data.std);
+        }
+
+        const sorted = means.map((m, i) => ({ name: names[i], mean: m, std: stds[i] }))
+            .sort((a, b) => a.mean - b.mean);
+
+        const trace = {
+            x: sorted.map(d => d.mean),
+            y: sorted.map(d => d.name),
+            type: 'bar',
+            orientation: 'h',
+            marker: { color: '#667eea' },
+            error_x: { type: 'data', array: sorted.map(d => d.std), visible: true },
+            name: 'Средний возраст',
+            text: sorted.map(d => d.mean.toFixed(1) + ' лет'),
+            textposition: 'outside'
+        };
+
+        const layout = {
+            title: { text: '📊 Средний возраст клиентов по группам', font: { size: 14 } },
+            xaxis: { title: 'Возраст (лет)' },
+            yaxis: { title: '' },
+            height: customHeight || 350,
+            width: customWidth || null,
+            margin: { l: 100, r: 80, t: 60, b: 40 },
+            plot_bgcolor: '#f8f9fa'
+        };
+
+        return { data: [trace], layout: layout };
+    }
+
+    function createFigure(metric, chartType, customHeight = null, customWidth = null) {
+        if (metric === 'age_analysis') {
+            return createAgeAnalysisFigure(customHeight, customWidth);
+        }
+
+        const values = getMetricValue(metric);
+        if (values === 'special_age_chart') {
+            return createAgeAnalysisFigure(customHeight, customWidth);
+        }
+
+        const groups = Object.keys(values);
+        const colors = getColors(groups);
+        const title = getMetricTitle(metric);
+
+        let traces = [];
+
+        if (chartType === 'bar') {
+            traces = [{
+                x: groups.map(g => allMetrics[g]?.name || g),
+                y: groups.map(g => values[g]),
+                type: 'bar',
+                marker: { color: groups.map(g => colors[g]) },
+                text: groups.map(g => formatValue(values[g], metric)),
+                textposition: 'outside',
+                textfont: { size: 11 }
+            }];
+        } else if (chartType === 'scatter') {
+            traces = [{
+                x: groups.map(g => allMetrics[g]?.name || g),
+                y: groups.map(g => values[g]),
+                mode: 'markers',
+                type: 'scatter',
+                marker: { size: 40, color: groups.map(g => colors[g]) },
+                text: groups.map(g => formatValue(values[g], metric)),
+                textposition: 'top center'
+            }];
+        } else {
+            traces = [{
+                x: groups.map(g => allMetrics[g]?.name || g),
+                y: groups.map(g => values[g]),
+                mode: 'lines+markers',
+                type: 'scatter',
+                line: { color: '#667eea', width: 3 },
+                marker: { size: 12, color: groups.map(g => colors[g]) },
+                text: groups.map(g => formatValue(values[g], metric)),
+                textposition: 'top center'
+            }];
+        }
+
+        const layout = {
+            title: { text: title, font: { size: 13 } },
+            xaxis: { title: "", fixedrange: true, tickangle: -15 },
+            yaxis: { title: "Значение", fixedrange: true },
+            hovermode: 'closest',
+            font: { family: 'Segoe UI', size: 11 },
+            showlegend: false,
+            margin: { l: 60, r: 30, t: 50, b: 80 },
+            height: customHeight || 350,
+            width: customWidth || null,
+            plot_bgcolor: '#f8f9fa',
+            paper_bgcolor: 'white'
+        };
+
+        if (metric === 'primary_conversion') {
+            layout.yaxis.tickformat = '.1f';
+            layout.yaxis.ticksuffix = '%';
+        }
+        if (metric === 'retention_rate') layout.yaxis.ticksuffix = 'x';
+        if (metric === 'checks_per_customer') layout.yaxis.ticksuffix = ' шт';
+        if (metric === 'roi') layout.yaxis.ticksuffix = '%';
+
+        return { data: traces, layout: layout };
+    }
+
+    function createStatsCards() {
+        const container = document.getElementById('stats-cards');
+        let cardsHtml = '';
+
+        for (const [groupId, metrics] of Object.entries(allMetrics)) {
+            const isControl = groupId === controlId;
+            const uplift = uplifts[groupId];
+            const convB = (metrics.primary_conversion * 100);
+
+            let ageInfo = '';
+            if (ageStats[groupId]) {
+                ageInfo = `<div style="margin-top: 8px; font-size: 12px; color: #666;">
+                            📊 Средний возраст: ${ageStats[groupId].mean.toFixed(1)} лет
+                          </div>`;
+            }
+
+            let promotionInfo = '';
+            if (metrics.has_promotion) {
+                promotionInfo = `<div class="promotion-badge"> </div>`;
+            }
+
+            let roiInfo = '';
+            if (metrics.roi !== undefined && metrics.roi !== 0) {
+                const roiClass = metrics.roi > 0 ? 'uplift-positive' : 'uplift-negative';
+                roiInfo = `<div class="${roiClass}" style="margin-top: 8px; font-size: 12px;">
+                            ROI: ${metrics.roi.toFixed(2)}%
+                          </div>`;
+            }
+
+            let controlOrUpliftHtml = '';
+            if (isControl) {
+                controlOrUpliftHtml = '<div style="margin-top: 10px; color: #888;">🔵 Контрольная группа (без акции)</div>';
+            } else if (uplift) {
+                const upliftClass = uplift.primary_conv_pp > 0 ? 'uplift-positive' : 'uplift-negative';
+                controlOrUpliftHtml = `<div class="${upliftClass}" style="margin-top: 10px;">
+                    vs Контроль: ${uplift.primary_conv_pp > 0 ? '+' : ''}${uplift.primary_conv_pp.toFixed(1)} п.п.
+                </div>`;
+            }
+
+            cardsHtml += `
+                <div class="stat-card">
+                    <h3>${metrics.name}</h3>
+                    ${promotionInfo}
+                    <div class="value">${Math.round(metrics.active).toLocaleString()} / ${Math.round(metrics.n).toLocaleString()}</div>
+                    <div>Конверсия: ${convB.toFixed(1)}%</div>
+                    <div>ARPU: ${Math.round(metrics.arpu).toLocaleString()} ₽</div>
+                    <div>ARPPU: ${Math.round(metrics.arppu).toLocaleString()} ₽</div>
+                    ${ageInfo}
+                    ${roiInfo}
+                    ${controlOrUpliftHtml}
+                </div>
+            `;
+        }
+        container.innerHTML = cardsHtml;
+    }
+
+    function createAgeStatsCard() {
+        const container = document.getElementById('age-stats-card');
+        if (Object.keys(ageStats).length === 0) {
+            container.innerHTML = '<div class="age-stats-card"><h3>👥 Возрастной анализ</h3><p>Нет данных о возрасте клиентов.</p></div>';
+            return;
+        }
+
+        let tableHtml = `
+            <div class="age-stats-card">
+                <h3>👥 Возрастной профиль клиентов по группам</h3>
+                <table class="age-table">
+                    <thead>
+                        <tr><th>Группа</th><th>Средний возраст</th><th>Медиана</th></tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        for (const [groupId, data] of Object.entries(ageStats)) {
+            tableHtml += `
+                <tr>
+                    <td><strong>${data.name}</strong></td>
+                    <td>${data.mean.toFixed(1)} лет</td>
+                    <td>${data.median.toFixed(1)} лет</td>
+                   
+                </tr>
+            `;
+        }
+
+        tableHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        container.innerHTML = tableHtml;
+    }
+
+    function createStatsGrid() {
+        const container = document.getElementById('stats-grid');
+
+        // ANOVA результаты
+        const anova = stats.anova_results;
+        const anovaSignClass = anova.significant ? 'significant-yes' : 'significant-no';
+        const anovaSignText = anova.significant ? ' Статистически значимы' : ' Не значимы';
+
+        let posthocHtml = '';
+        if (anova.posthoc) {
+            for (const [comparison, result] of Object.entries(anova.posthoc)) {
+                const signText = result.significant ? '' : '';
+                posthocHtml += `<div style="font-size: 12px; margin-top: 5px;">${comparison}: ${signText} (p=${result.p_value.toFixed(4)})</div>`;
+            }
+        }
+
+        // χ² результаты
+        let chi2Html = '';
+        for (const [groupId, result] of Object.entries(stats.chi2_results)) {
+            const groupName = allMetrics[groupId]?.name || groupId;
+            const signText = result.significant ? '' : '';
+            chi2Html += `<div>${groupName}: χ²=${result.chi2.toFixed(2)}, p=${result.p_value.toFixed(4)} ${signText}</div>`;
+        }
+
+        // t-тест результаты
+        let ttestHtml = '';
+        for (const [groupId, result] of Object.entries(stats.ttest_results)) {
+            const groupName = allMetrics[groupId]?.name || groupId;
+            const signText = result.significant ? '' : '';
+            ttestHtml += `
+                <div style="margin-top: 10px;">
+                    <strong>${groupName}:</strong><br>
+                    • Разница средних: ${result.mean_diff.toFixed(2)} ₽<br>
+                    • 95% ДИ: [${result.ci_lower.toFixed(2)}, ${result.ci_upper.toFixed(2)}]<br>
+                    • Cohen's d: ${result.cohens_d.toFixed(3)}<br>
+                    • p-value: ${result.p_value.toFixed(4)} ${signText}
+                </div>
+            `;
+        }
+
+        // Байесовские интервалы
+        let bootstrapHtml = '';
+        for (const [groupId, result] of Object.entries(stats.bootstrap_ci)) {
+            const groupName = allMetrics[groupId]?.name || groupId;
+            const probBetter = (result.prob_better * 100).toFixed(1);
+            bootstrapHtml += `
+                <div style="margin-top: 10px;">
+                    <strong>${groupName}:</strong><br>
+                    • Точечная оценка: ${(result.point_estimate * 100).toFixed(2)}%<br>
+                    • 95% ДИ: [${(result.ci_lower * 100).toFixed(2)}%, ${(result.ci_upper * 100).toFixed(2)}%]<br>
+                    • Вероятность быть лучше контроля: ${probBetter}%
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            <div class="stat-item">
+                <strong>📈 ANOVA (Первичная конверсия)</strong><br>
+                F-статистика: ${anova.f_statistic.toFixed(4)}<br>
+                p-value: ${anova.p_value.toFixed(6)}<br>
+                <span class="${anovaSignClass}">${anovaSignText}</span>
+                <div style="margin-top: 10px;"><strong>Пост-хок анализ (Tukey HSD):</strong></div>
+                ${posthocHtml || 'Нет данных'}
+            </div>
+            <div class="stat-item">
+                <strong>🔄 χ²-тест (Удержание)</strong><br>
+                ${chi2Html || 'Нет данных'}
+                <div class="note" style="margin-top: 10px;">Cramér's V > 0.1 указывает на практическую значимость</div>
+            </div>
+            <div class="stat-item">
+                <strong>💰 t-критерий (Средний чек)</strong><br>
+                ${ttestHtml || 'Нет данных'}
+                <div class="note" style="margin-top: 10px;">Cohen's d: 0.2-0.3 (малый), 0.5 (средний), >0.8 (большой эффект)</div>
+            </div>
+            <div class="stat-item">
+                <strong>🎯 Байесовские доверительные интервалы (Конверсия)</strong><br>
+                ${bootstrapHtml || 'Нет данных'}
+                <div class="note" style="margin-top: 10px;">Вероятность >95% указывает на статистически значимое преимущество</div>
+            </div>
+        `;
+    }
+
+    function createInsights() {
+        const insights = [];
+
+        let bestConv = {group: null, value: -1};
+        for (const [groupId, metrics] of Object.entries(allMetrics)) {
+            if (metrics.primary_conversion > bestConv.value) {
+                bestConv = {group: groupId, value: metrics.primary_conversion, name: metrics.name};
+            }
+        }
+
+        let bestROI = {group: null, value: -Infinity};
+        for (const [groupId, metrics] of Object.entries(allMetrics)) {
+            if (metrics.roi && metrics.roi > bestROI.value) {
+                bestROI = {group: groupId, value: metrics.roi, name: metrics.name};
+            }
+        }
+
+        let bestBonusEff = {group: null, value: -1};
+        for (const [groupId, metrics] of Object.entries(allMetrics)) {
+            if (metrics.bonus_efficiency && metrics.bonus_efficiency > bestBonusEff.value) {
+                bestBonusEff = {group: groupId, value: metrics.bonus_efficiency, name: metrics.name};
+            }
+        }
+
+        // Статистические выводы
+        let statsConclusion = '';
+        if (stats.anova_results.significant) {
+            statsConclusion = '✅ ANOVA выявил статистически значимые различия в конверсии между группами. ';
+        } else {
+            statsConclusion = '❌ Статистически значимых различий в конверсии между группами не обнаружено. ';
+        }
+
+        
+
+        let ageInsight = '';
+        if (Object.keys(ageStats).length > 0) {
+            let youngestGroup = null;
+            let oldestGroup = null;
+            for (const [groupId, data] of Object.entries(ageStats)) {
+                if (!youngestGroup || data.mean < youngestGroup.mean) youngestGroup = {name: data.name, mean: data.mean};
+                if (!oldestGroup || data.mean > oldestGroup.mean) oldestGroup = {name: data.name, mean: data.mean};
+            }
+            ageInsight = `👥 Самая молодая аудитория: <strong>${youngestGroup.name}</strong> (ср. возраст ${youngestGroup.mean.toFixed(1)} лет)<br>
+                         👴 Самая взрослая аудитория: <strong>${oldestGroup.name}</strong> (ср. возраст ${oldestGroup.mean.toFixed(1)} лет)`;
+        }
+
+        insights.push(`🏆 Лучшая группа по конверсии: <strong>${bestConv.name}</strong> (${(bestConv.value * 100).toFixed(1)}%)`);
+        if (bestROI.value > -Infinity && bestROI.value !== 0) {
+            insights.push(`💰 Лучший ROI: <strong>${bestROI.name}</strong> (${bestROI.value.toFixed(2)}%)`);
+        }
+        
+        insights.push(statsConclusion);
+        insights.push(bonusConclusion);
+        if (ageInsight) insights.push(ageInsight);
+
+        const container = document.getElementById('insights');
+        container.innerHTML = `
+            <h3>📌 Ключевые инсайты и рекомендации</h3>
+            <ul>
+                ${insights.map(i => `<li><span>🔍</span><span>${i}</span></li>`).join('')}
+            </ul>
+            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                <strong>📊 Выводы:</strong><br>
+                • Масштабировать ПУШ как основной канал (высокая конверсия, нулевые затраты). <br>
+                • Не использовать СМС изолированно для возрастной аудитории >50 лет<br>
+                • Лучший по конверсии и ROI — канал «PUSH».<br>
+                • 
+            </div>
+        `;
+    }
+
+    function addChart() {
+        if (charts.length >= 16) {alert('Максимум 16 графиков!'); return;}
+        const metric = document.getElementById('metric-select').value;
+        const offset = charts.length * 30;
+        charts.push({id: nextId++, metric: metric, chartType: 'bar', x: 20 + offset, y: 20 + offset, width: 550, height: 450});
+        renderAllCharts();
+    }
+
+    function resetAllCharts() {
+        if (confirm('Удалить все графики?')) {
+            charts = [];
+            renderAllCharts();
+        }
+    }
+
+    function changeChartType(chartId, newType) {
+        const chart = charts.find(c => c.id === chartId);
+        if (chart && chart.metric !== 'age_analysis') {chart.chartType = newType; updateChartSize(chartId);}
+    }
+
+    function removeChart(chartId) {
+        charts = charts.filter(c => c.id !== chartId);
+        renderAllCharts();
+    }
+
+    function updateChartSize(chartId) {
+        const chartCard = document.getElementById(`chart-card-${chartId}`);
+        const chartContainer = document.getElementById(`chart-${chartId}`);
+        if (!chartCard || !chartContainer) return;
+        const chart = charts.find(c => c.id === chartId);
+        if (!chart) return;
+
+        const cardHeight = chartCard.clientHeight;
+        const cardWidth = chartCard.clientWidth;
+        const headerHeight = chartCard.querySelector('.chart-header')?.offsetHeight || 45;
+        const availableHeight = cardHeight - headerHeight - 25;
+        const availableWidth = cardWidth - 24;
+
+        chartContainer.style.height = availableHeight + 'px';
+        chartContainer.style.width = availableWidth + 'px';
+
+        let figure = createFigure(chart.metric, chart.chartType, availableHeight, availableWidth);
+        Plotly.react(`chart-${chartId}`, figure.data, figure.layout, plotlyConfig);
+    }
+
+    function renderAllCharts() {
+        const container = document.getElementById('charts-grid');
+        container.innerHTML = '';
+        if (charts.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 100px; background: white; border-radius: 20px; color: #999;">Добавьте графики с помощью панели управления выше</div>';
+            return;
+        }
+
+        container.style.position = 'relative';
+        container.style.height = (Math.max(800, Math.ceil(charts.length / 2) * 500)) + 'px';
+
+        charts.forEach(chart => {
+            const chartCard = document.createElement('div');
+            chartCard.className = 'chart-card';
+            chartCard.id = `chart-card-${chart.id}`;
+            chartCard.style.position = 'absolute';
+            chartCard.style.left = '0px';
+            chartCard.style.top = '0px';
+            chartCard.style.width = chart.width + 'px';
+            chartCard.style.height = chart.height + 'px';
+            chartCard.style.transform = `translate(${chart.x}px, ${chart.y}px)`;
+            chartCard.setAttribute('data-x', chart.x);
+            chartCard.setAttribute('data-y', chart.y);
+
+            const title = getMetricTitle(chart.metric);
+            const isAgeChart = chart.metric === 'age_analysis';
+            const chartButtons = isAgeChart ? '' : `
+                <button class="chart-type-btn" onclick="changeChartType(${chart.id}, 'bar')" title="Столбцы">📊</button>
+                <button class="chart-type-btn" onclick="changeChartType(${chart.id}, 'line')" title="Линии">📈</button>
+                <button class="chart-type-btn" onclick="changeChartType(${chart.id}, 'scatter')" title="Точки">🔵</button>
+            `;
+
+            chartCard.innerHTML = `
+                <div class="chart-header">
+                    <h3>${title.length > 45 ? title.substring(0, 45) + '...' : title}</h3>
+                    <div class="header-buttons">
+                        ${chartButtons}
+                        <button class="remove-btn" onclick="removeChart(${chart.id})">×</button>
+                    </div>
+                </div>
+                <div id="chart-${chart.id}" class="chart-container"></div>
+                <div class="resize-handle"></div>
+            `;
+            container.appendChild(chartCard);
+
+            setTimeout(() => {
+                const cardHeight = chartCard.clientHeight;
+                const cardWidth = chartCard.clientWidth;
+                const headerHeight = chartCard.querySelector('.chart-header')?.offsetHeight || 45;
+                const availableHeight = cardHeight - headerHeight - 25;
+                const availableWidth = cardWidth - 24;
+                let figure = createFigure(chart.metric, chart.chartType, availableHeight, availableWidth);
+                Plotly.newPlot(`chart-${chart.id}`, figure.data, figure.layout, plotlyConfig);
+            }, 50);
+
+            setupInteractions(`chart-card-${chart.id}`, chart.id);
+        });
+    }
+
+    function setupInteractions(elementId, chartId) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        interact(element).draggable({
+            inertia: false,
+            modifiers: [interact.modifiers.restrictRect({restriction: 'parent', endOnly: true})],
+            onmove: function(event) {
+                const target = event.target;
+                const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+                target.style.transform = `translate(${x}px, ${y}px)`;
+                target.setAttribute('data-x', x);
+                target.setAttribute('data-y', y);
+                const chart = charts.find(c => c.id === chartId);
+                if (chart) {chart.x = x; chart.y = y;}
+            }
+        });
+
+        interact(element).resizable({
+            edges: {bottom: true, right: true},
+            modifiers: [
+                interact.modifiers.restrictSize({min: {width: 380, height: 320}, max: {width: 1200, height: 700}})],
+            onmove: function(event) {
+                const target = event.target;
+                target.style.width = event.rect.width + 'px';
+                target.style.height = event.rect.height + 'px';
+                const chart = charts.find(c => c.id === chartId);
+                if (chart) {chart.width = event.rect.width; chart.height = event.rect.height;}
+                if (resizeTimeout) clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => updateChartSize(chartId), 100);
+            }
+        });
+    }
+
+    window.addEventListener('resize', () => {
+        if (resizeTimeout) clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => charts.forEach(chart => updateChartSize(chart.id)), 100);
+    });
+
+    createStatsCards();
+    createAgeStatsCard();
+    createStatsGrid();
+    createInsights();
+
+    charts.push({id: nextId++, metric: 'primary_conversion', chartType: 'bar', x: 20, y: 20, width: 530, height: 420});
+    charts.push({id: nextId++, metric: 'roi', chartType: 'bar', x: 570, y: 20, width: 530, height: 420});
+    charts.push({id: nextId++, metric: 'age_analysis', chartType: 'bar', x: 20, y: 460, width: 530, height: 420});
+    charts.push({id: nextId++, metric: 'bonus_efficiency', chartType: 'bar', x: 570, y: 460, width: 530, height: 420});
+    renderAllCharts();
+</script>
+</body>
+</html>
