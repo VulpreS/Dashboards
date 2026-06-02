@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Стратегия лояльности | Дорожная карта — обновлённая версия</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 30%, #14222e, #0a111c);
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: #eef2ff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .swipe-container {
+            height: 100vh;
+            width: 100%;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        .swipe-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .slide {
+            height: 100vh;
+            width: 100%;
+            scroll-snap-align: start;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .card-slide {
+            background: rgba(12, 18, 28, 0.9);
+            backdrop-filter: blur(14px);
+            border-radius: 2rem;
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            box-shadow: 0 30px 45px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 215, 0, 0.15);
+            width: 100%;
+            max-width: 1300px;
+            height: auto;
+            max-height: 92vh;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .card-slide::-webkit-scrollbar {
+            width: 5px;
+        }
+        .card-slide::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 10px;
+        }
+        .card-slide::-webkit-scrollbar-thumb {
+            background: #ffd966;
+            border-radius: 10px;
+        }
+
+        :root {
+            --gold: #ffd966;
+        }
+
+        h1 {
+            font-size: 2.6rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff, #ffd966, #60a5fa);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            border-left: 5px solid var(--gold);
+            padding-left: 1rem;
+            color: white;
+        }
+
+        .grid-2, .grid-3 {
+            display: grid;
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+        .card-inner {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
+            padding: 1.3rem;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            transition: all 0.25s ease;
+            cursor: pointer;
+        }
+        .card-inner:hover {
+            border-color: var(--gold);
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+            transform: translateY(-5px);
+            background: rgba(0, 0, 0, 0.65);
+        }
+
+        .stat-number {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffd966, #60a5fa);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .badge {
+            background: rgba(255, 217, 102, 0.2);
+            border-radius: 60px;
+            padding: 0.3rem 1rem;
+            font-size: 0.75rem;
+            border: 0.5px solid #ffd966;
+            display: inline-block;
+        }
+
+        .wavy-road-container {
+            margin: 2rem 0 1.5rem;
+            position: relative;
+            padding: 1rem 0;
+        }
+        svg {
+            width: 100%;
+            height: 130px;
+            display: block;
+        }
+        .road-stops {
+            display: flex;
+            justify-content: space-between;
+            margin-top: -78px;
+            position: relative;
+            z-index: 2;
+            padding: 0 1%;
+        }
+        .stop {
+            text-align: center;
+            width: 105px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .stop-circle {
+            width: 48px;
+            height: 48px;
+            background: #1e293b;
+            border-radius: 50%;
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            border: 2px solid var(--gold);
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .stop.active .stop-circle {
+            background: var(--gold);
+            color: #0a1a2f;
+            box-shadow: 0 0 14px #ffd966;
+            border-color: white;
+            transform: scale(1.05);
+        }
+        .stop-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: rgba(0,0,0,0.6);
+            padding: 3px 6px;
+            border-radius: 20px;
+            display: inline-block;
+            color: #ffd966;
+            line-height: 1.2;
+        }
+        .stop-desc {
+            background: rgba(0, 0, 0, 0.65);
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-top: 1.2rem;
+            font-size: 0.85rem;
+            backdrop-filter: blur(4px);
+            border-left: 3px solid var(--gold);
+        }
+        .stop-desc ul {
+            margin-left: 1.2rem;
+            margin-top: 0.3rem;
+        }
+        .stop-desc li {
+            margin: 0.3rem 0;
+        }
+
+        .ref-vertical {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .ref-step {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            padding: 0.8rem 0.5rem;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+            transition: all 0.25s ease;
+            cursor: pointer;
+            border-radius: 1rem;
+        }
+        .ref-step:last-child {
+            border-bottom: none;
+        }
+        .ref-step:hover {
+            background: rgba(255, 215, 0, 0.1);
+            transform: translateX(8px) scale(1.01);
+            border-bottom-color: var(--gold);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .ref-icon {
+            width: 44px;
+            font-size: 1.6rem;
+            text-align: center;
+        }
+        .ref-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .calc-block {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
+            padding: 1.2rem;
+            margin: 1rem 0;
+        }
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.4);
+            padding: 0.5rem 0.8rem;
+            border-radius: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .action-status {
+            font-size: 0.8rem;
+        }
+        input[type="range"] {
+            width: 100%;
+            background: #334155;
+            height: 5px;
+            border-radius: 5px;
+            -webkit-appearance: none;
+            margin: 0.8rem 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #ffd966;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        @media (max-width: 700px) {
+            .card-slide { padding: 1rem; }
+            h1 { font-size: 1.6rem; }
+            h2 { font-size: 1.2rem; }
+            .stop { width: 70px; }
+            .stop-circle { width: 38px; height: 38px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="swipe-container">
+    <!-- Слайд 1: метрики (новые рандомные) -->
+    <div class="slide">
+        <div class="card-slide">
+            <div style="text-align: center; margin-bottom: 1rem;">
+                <h1>Стратегия лояльности</h1>
+                <p style="margin: 0.3rem 0;">Грейды · Акции 4+950 / 6+950 · Реферальная программа</p>
+            </div>
+            <h2>📊 Ключевые метрики (март 2026)</h2>
+            <div class="grid-3">
+                <div class="card-inner"><div class="stat-number">187432</div><div>Активные клиенты (месяц)</div><div>доля 58,4% (мес/год)</div></div>
+                <div class="card-inner"><div class="stat-number">528 ₽</div><div>Средний чек по карте</div><div>среднее по сети 472 ₽ | +11,9%</div></div>
+                <div class="card-inner"><div class="stat-number">73,6%</div><div>Доля продаж по карте</div></div>
+            </div>
+            <div class="grid-2">
+                <div class="card-inner">📈 Частота покупок: 5,4 посещений/мес</div>
+                <div class="card-inner">🧾 Участники программы: чек 575₽ (неучастники 460₽, +25%)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Слайд 2: Грейды (новые бонусы 2/3/4%) -->
+    <div class="slide">
+        <div class="card-slide">
+            <h2>🏅 Грейдовая система (ежемесячное подтверждение)</h2>
+            <div class="grid-3">
+                <div class="card-inner"><strong>⭐ Обычная</strong><div class="stat-number">2%</div><div>кешбэк</div><div>без порога</div></div>
+                <div class="card-inner"><strong>🌟 Золотая</strong><div class="stat-number">3%</div><div>кешбэк</div><div>траты ≥ 7 500 ₽/мес</div></div>
+                <div class="card-inner"><strong>💎 Платиновая</strong><div class="stat-number">4%</div><div>кешбэк</div><div>траты ≥ 15 000 ₽/мес</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Слайд 3: Акция (новые условия: 4+950 и 6+950) -->
+    <div class="slide">
+        <div class="card-slide">
+            <h2>✨ Постоянная акция (два уровня)</h2>
+            <div class="grid-2">
+                <div class="card-inner"><strong>4 покупки от 950₽</strong><br>→ +120 бонусов</div>
+                <div class="card-inner"><strong>6 покупок от 950₽</strong><br>→ дополнительные 180 бонусов <span style="color:#ffd966;">(суммарно 300)</span></div>
+            </div>
+            <div class="card-inner" style="margin-top: 0.8rem;">🎯 Ожидаемый эффект: увеличение лояльности, рост частоты и среднего чека.</div>
+        </div>
+    </div>
+
+    <!-- Слайд 4: Рефералка (изменённые бонусы) -->
+    <div class="slide">
+        <div class="card-slide">
+            <h2>👥 Реферальная система (удержание + сетевой эффект)</h2>
+            <div class="ref-vertical">
+                <div class="ref-step"><div class="ref-icon">👤</div><div class="ref-text">Рефер (активный клиент)</div></div>
+                <div class="ref-step"><div class="ref-icon">🔗</div><div class="ref-text">Передаёт реферальную ссылку другу</div></div>
+                <div class="ref-step"><div class="ref-icon">👥</div><div class="ref-text">Друг регистрируется по ссылке</div></div>
+                <div class="ref-step"><div class="ref-icon">💸</div><div class="ref-text">Совершает первую покупку от 600 ₽</div></div>
+                <div class="ref-step"><div class="ref-icon">🎁</div><div class="ref-text">Оба получают +75 бонусов (разово)</div></div>
+                <div class="ref-step"><div class="ref-icon">🔄</div><div class="ref-text">Друг делает 4+ покупок в месяц, 2 месяца подряд</div></div>
+                <div class="ref-step"><div class="ref-icon">🏆</div><div class="ref-text">Рефер получает 0,3% бонусами с покупок друга (макс 500 бонусов/мес, первые 8 месяцев)</div></div>
+            </div>
+            <div style="margin-top: 1rem;">
+                <p><strong>🏆 Геймификация + лидерборды:</strong></p>
+                <ul style="margin-left: 1.5rem;">
+                    <li>Таблица лидеров по количеству приглашённых друзей (месяц / год)</li>
+                    <li>Ценные призы для топ-участников</li>
+                    <li>Ожидаемый эффект: азарт, виральность, лояльность молодёжи</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Слайд 5: ДОРОЖНАЯ КАРТА (обновлена) -->
+    <div class="slide">
+        <div class="card-slide">
+            <h2>🗺️ Дорожная карта</h2>
+            <div class="wavy-road-container">
+                <svg viewBox="0 0 1000 110" preserveAspectRatio="none">
+                    <path d="M40,60 C140,25 250,85 380,60 C440,40 650,85 790,45 C870,28 930,75 950,55"
+                          stroke="#ffd966" stroke-width="3.5" fill="none" stroke-dasharray="6 4" />
+                    <path d="M40,60 C140,25 250,85 380,60 C440,40 650,85 790,45 C870,28 930,75 950,55"
+                          stroke="#60a5fa" stroke-width="2" fill="none" opacity="0.5"/>
+                </svg>
+                <div class="road-stops">
+                    <div class="stop" data-stage="may"><div class="stop-circle">🔧</div><div class="stop-label">Май</div></div>
+                    <div class="stop" data-stage="jun"><div class="stop-circle">📊</div><div class="stop-label">Июнь</div></div>
+                    <div class="stop" data-stage="jul"><div class="stop-circle">⏳</div><div class="stop-label">Июль</div></div>
+                    <div class="stop" data-stage="q4"><div class="stop-circle">📌</div><div class="stop-label">Q4 2026</div></div>
+                    <div class="stop" data-stage="q1"><div class="stop-circle">🚀</div><div class="stop-label">Q1 2027 →</div></div>
+                </div>
+            </div>
+            <div class="stop-desc" id="roadmapDesc">Кликните на этап</div>
+        </div>
+    </div>
+
+    <!-- Слайд 6: А/Б-тест акции 4+950 / 6+950 -->
+    <div class="slide">
+        <div class="card-slide">
+            <h2>🧪 А/Б-тест акции «4×950 - 6×950»</h2>
+            <p style="margin-bottom: 1rem;">Протокол, целевые группы, каналы и метрики успеха</p>
+
+            <div class="grid-2" style="margin-bottom: 1rem;">
+                <div class="card-inner">
+                    <strong>🎯 Группа А (тест)</strong><br>
+                    — Пуш-уведомление<br>
+                    — Инбокс (раздел уведомлений)<br>
+                    — Коммуникация на кассе<br>
+                    <span class="badge" style="margin-top: 8px; display: inline-block;">4 покупки от 950₽ → 120 бонусов</span>
+                    <span class="badge" style="margin-top: 8px; display: inline-block;">6 покупок от 950₽ → 180 бонусов (всего 300)</span>
+                </div>
+                <div class="card-inner">
+                    <strong>🔘 Группа Б (контроль)</strong><br>
+                    — Без информирования<br>
+                    — Без оффера<br>
+                    — Естественное поведение<br>
+                    <span class="badge" style="margin-top: 8px; display: inline-block;">полный контроль</span>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card-inner">
+                    <strong>👥 Отбор клиентов</strong><br>
+                    ✅ Активные растущие<br>
+                    ✅ Активные убывающие<br>
+                    ✅ Есть мобильное приложение<br>
+                    → рандомизация в группы А и Б
+                </div>
+                <div class="card-inner">
+                    <strong>⏱️ Длительность</strong><br>
+                    📆 1 месяц — тест (информирование + покупки)<br>
+                    📆 +1 месяц — пост-эффект (LTV, удержание)
+                </div>
+            </div>
+
+            <div class="ref-vertical" style="margin-top: 1rem;">
+                <div class="ref-step">
+                    <div class="ref-icon">📊</div>
+                    <div class="ref-text"><strong>Метрики до теста</strong><br>Частота, средний чек, LTV (бенчмарк)</div>
+                </div>
+                <div class="ref-step">
+                    <div class="ref-icon">📈</div>
+                    <div class="ref-text"><strong>Метрики после теста</strong><br>Δ частоты, Δ чека, Δ LTV, uplift, p-value, доверительные интервалы</div>
+                </div>
+                <div class="ref-step">
+                    <div class="ref-icon">📋</div>
+                    <div class="ref-text"><strong>Отчётность</strong><br>Стат. обработка: t-критерий / бутстрап, байесовская вероятность, ROI акции</div>
+                </div>
+            </div>
+
+            <div class="badge" style="margin-top: 1rem; display: inline-block; background: rgba(255, 217, 102, 0.15);">
+                🧠 Решение по итогам: если uplift значим → внедряем на всю сеть. Если нет → доработка механики.
+            </div>
+        </div>
+    </div>
+
+    <!-- Слайд 7: Калькулятор (обновлённые цифры) -->
+    <div class="slide">
+        <div class="card-slide">
+            <h2>💰 Экономическая модель (32% маржа, грейд + акция)</h2>
+            <div class="calc-block">
+                <label style="font-size: 1rem;">Выручка клиента / мес, ₽: <strong id="revenueVal" style="font-size: 1.3rem;">0</strong></label>
+                <input type="range" id="revenueSlider" min="0" max="30000" step="500" value="0">
+                <div id="gradeInfo" class="badge" style="margin: 0.3rem 0;">🏅 грейд: нет трат</div>
+
+                <div class="action-row">
+                    <span> Акция 4+950 (+120 бонусов)</span>
+                    <span class="action-status" id="action4Status">⚡ не выполнена</span>
+                </div>
+                <div class="action-row">
+                    <span> Акция 6+950 (+180 дополнительных, суммарно 300)</span>
+                    <span class="action-status" id="action6Status">⚡ не выполнена</span>
+                </div>
+
+                <div class="grid-2" style="margin-top: 1rem;">
+                    <div class="card-inner">Маржа (32%): <strong id="marginRub">0</strong> ₽</div>
+                    <div class="card-inner">Кешбэк (%): <strong id="cashbackPercent">0%</strong></div>
+                    <div class="card-inner">Бонусы (кешбэк+акция): <strong id="bonusSpent">0</strong> ₽</div>
+                    <div class="card-inner">Чистая прибыль: <strong id="netProfit">0</strong> ₽</div>
+                    <div class="card-inner">Эффективная маржа: <strong id="effMargin">0.0</strong>%</div>
+                    <div class="badge" id="badgeCondition">⚡ акция не применена</div>
+                </div>
+                <p style="font-size: 0.7rem; margin-top: 0.8rem;">* Грейд: 2% (обычный), 3% от 7 500₽, 4% от 15 000₽. Акция 4+950 — от 3 800₽, 6+950 — от 5 700₽.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // дорожная карта (новое содержание)
+    const stops = document.querySelectorAll('.stop');
+    const descBlock = document.getElementById('roadmapDesc');
+    const details = {
+        may: '<strong>🔧 Май</strong><ul><li>Разработка механик акции 4+950 и 6+950</li><li>Настройка трекера в CRM (откаты, счётчик покупок)</li><li>Подготовка сегментов для А/Б-теста (активные растущие + убывающие)</li></ul>',
+        jun: '<strong>📊 Июнь</strong><ul><li>Запуск А/Б-теста (4 недели)</li><li>Коммуникация: push, инбокс, касса (группа А) vs контроль (группа Б)</li><li>Сбор первичных метрик</li></ul>',
+        jul: '<strong>⏳ Июль</strong><ul><li>Пост-период 30 дней (наблюдение LTV, частоты, чека)</li><li>Статистическая обработка: t-критерий, доверительные интервалы, бутстрап</li><li>Оценка отложенного эффекта бонусов</li></ul>',
+        q4: '<strong>📌 Q4 2026</strong><ul><li>Масштабирование успешных механик</li><li>Оптимизация грейдов, персонализация офферов</li><li>Подготовка инфраструктуры для реферальной программы</li></ul>',
+        q1: '<strong>🚀 Q1 2027 → далее</strong><ul><li>Запуск реферальной программы (двухуровневая: 75+75 бонусов + 0,3% активным друзьям)</li><li>Внедрение таблиц лидеров и ежемесячных призов</li><li>Виральный рост и удержание молодой аудитории</li></ul>'
+    };
+    stops.forEach(stop => {
+        stop.addEventListener('click', () => {
+            stops.forEach(s => s.classList.remove('active'));
+            stop.classList.add('active');
+            const stage = stop.getAttribute('data-stage');
+            descBlock.innerHTML = details[stage];
+        });
+    });
+    if(stops.length) {
+        stops[0].classList.add('active');
+        descBlock.innerHTML = details.may;
+    }
+
+    // калькулятор (обновлённые пороги)
+    const slider = document.getElementById('revenueSlider');
+    const revSpan = document.getElementById('revenueVal');
+    const marginSpan = document.getElementById('marginRub');
+    const cashbackSpan = document.getElementById('cashbackPercent');
+    const bonusSpan = document.getElementById('bonusSpent');
+    const profitSpan = document.getElementById('netProfit');
+    const effSpan = document.getElementById('effMargin');
+    const badgeCond = document.getElementById('badgeCondition');
+    const gradeSpan = document.getElementById('gradeInfo');
+    const action4Span = document.getElementById('action4Status');
+    const action6Span = document.getElementById('action6Status');
+
+    function getCashbackRate(rev) {
+        if (rev >= 15000) return 4;
+        if (rev >= 7500) return 3;
+        return 2;
+    }
+
+    function updateCalc() {
+        let rev = parseFloat(slider.value);
+        revSpan.innerText = rev;
+        let margin = rev * 0.32;
+        marginSpan.innerText = margin.toFixed(0);
+        let rate = getCashbackRate(rev);
+        cashbackSpan.innerText = rate + '%';
+        if (rev >= 15000) gradeSpan.innerHTML = '🏅 Платиновый грейд (4%)';
+        else if (rev >= 7500) gradeSpan.innerHTML = '🏅 Золотой грейд (3%)';
+        else if (rev > 0) gradeSpan.innerHTML = '🏅 Обычный грейд (2%)';
+        else gradeSpan.innerHTML = '🏅 грейд: нет трат';
+
+        let action4 = rev >= 3800;
+        let action6 = rev >= 5700;
+
+        action4Span.innerHTML = action4 ? '✅ выполнена (+120)' : '⚡ не выполнена (от 3 800₽)';
+        action6Span.innerHTML = action6 ? '✅ выполнена (+180)' : '⚡ не выполнена (от 5 700₽)';
+
+        let cashBonus = rev * (rate / 100);
+        let actionBonus = action6 ? 300 : (action4 ? 120 : 0);
+        let total = cashBonus + actionBonus;
+        if (total > rev * 0.25) total = rev * 0.25;
+        bonusSpan.innerText = total.toFixed(0);
+
+        if (action6) badgeCond.innerHTML = '✅ акция 6+950 (+300)';
+        else if (action4) badgeCond.innerHTML = '✅ акция 4+950 (+120)';
+        else badgeCond.innerHTML = '⚡ акция не применена';
+
+        let net = margin - total;
+        if (net < 0) net = 0;
+        profitSpan.innerText = net.toFixed(0);
+        let eff = (net / rev) * 100;
+        if (rev === 0) eff = 0;
+        effSpan.innerText = eff.toFixed(1);
+    }
+    slider.addEventListener('input', updateCalc);
+    updateCalc();
+</script>
+</body>
+</html>
