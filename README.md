@@ -29,17 +29,29 @@
 ##  Структура проекта
 
 Dashboards/
+
 ├── kpi_dashboard.py # Генератор KPI дашборда
+
 ├── ab_test_dashboard.py # Генератор A/B/C/D тест-дашборда
+
 ├── requirements.txt # Зависимости
+
 ├── data/
+
 │ ├── data.xlsx # Исходные данные (KPI)
+
 │ ├── push_age_data.csv # Возрастные данные (опционально)
+
 │ ├── sms_age_data.csv
+
 │ ├── combined_age_data.csv
+
 │ └── control_age_data.csv 
+
 └── outputs/
+
 ├── kpi_dashboard_dual_mode.html
+
 └── ab_test_hybrid_dashboard.html
 
 ##Примеры 
